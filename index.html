@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Glucomether</title>
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" />
+	<style>html, body {margin: 0; height: 100%; overflow: hidden}</style>
+</head>
+
+<body style="background-color:#212529;">
+	<!-- As a heading -->
+	<div class="p-3 mb-2 bg-dark text-white">
+		<div class="container">
+			<div class="row">
+				<div class="col-5">
+					<h1 id="time"></h1>
+				</div>
+				<div class="col">
+					<span class="badge bg-success bi bi-battery-full" id="battery" style="font-size:30px; font-family: Arial;">medicalDeviceBatteryLevelPercent</span>
+				</div>
+				<div class="col">
+					<span class="badge bg-secondary" id="duration" style="font-size:30px; font-family: Arial;">sensorDurationHours</span>
+				</div>
+				<div class="col">
+					<span class="badge bg-warning text-dark" id="claibration" style="font-size:30px; font-family: Arial;">timeToNextCalibHours</span>
+				</div>
+			</div>
+		</div>
+		<hr />
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col">
+					<h1 style="font-family: Arial;" id="Name">Hey!</h1>
+					</br>
+					<div class="alert alert-info bi bi-info-circle-fill" role="alert" style="font-family: Arial;" id="info"> Sensor is normal </div>
+					<div class="container">
+						<div class="row">
+							<div class="col">
+								<center>
+									<p style="font-size:150px; font-family: Arial;" id="lastSG">lastSG</p>
+								</center>
+							</div>
+							<div class="col">
+								<div class="row">
+									<p></br></p>
+								</div>
+								<div class="row">
+									<div class="container">
+										<div class="row">
+											<div class="col-1">
+												<p style="font-size:50px; font-family: Arial;" id="trend"></p>
+											</div>
+											<div class="col-1">
+												<p style="font-size:50px; font-family: Arial;" id="trend2"></p>
+											</div>
+											<div class="col-1">
+												<p style="font-size:50px; font-family: Arial;" id="trend3"></p>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="row">
+									<p style="font-size:25px; vertical-align: text-top; font-family: Arial;">MG/DL</p>
+								</div>
+							</div>
+							<div class="col">
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col">
+					</br></br></br>
+					<canvas id="myChart" style="width:100%;max-width:700px" id="canva"></canvas>
+				</div>
+			</div>
+			<hr />
+			<div class="container">
+				<div class="row">
+					<div class="col">
+						</br>
+						<p id="status" style="color:DarkGrey;">Status: </p>
+					</div>
+					<div class="col">
+						</br>
+					</div>
+					<div class="col">
+						</br>
+					</div>
+				</div>
+			</div>
+			</br>
+			<hr />
+		</div>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+		<script>
+    
+		firstName = ""; // USER VARIABLES
+		lastSG = null; // GLUCOSE VARIABLES
+		LSG = null;
+		sensorState = "ERROR"; // STATE VARIABLES
+		sensorDurationHours = 0; // SENSOR VARIABLES
+		SDH = 0;
+		medicalDeviceBatteryLevelPercent = 0; // BATTERY VARIABLES
+		timeToNextCalibHours = 0; // CLAIBRATION VARIABLES
+		lastSGTrend = "ERROR"; // TREND VARIABLES
+		Values = []; // CHART VARIABLES
+		function showTime() {
+			// VARIABLES
+			// SENSOR DURATION
+			if(sensorDurationHours > 23) {
+				SDH = sensorDurationHours / 24;
+				SDH = Math.round(SDH);
+				document.getElementById('duration').innerText = " " + SDH + " days";
+				document.getElementById('duration').className = "badge bg-success text-dark bi bi-calendar-heart-fill";
+			} else {
+				SDH = sensorDurationHours;
+				document.getElementById('duration').innerText = " " + SDH + " hours";
+				if(SDH > 7) {
+					document.getElementById('duration').className = "badge bg-warning text-dark bi bi-calendar-heart-fill";
+				} else if(SDH > 0) {
+					document.getElementById('duration').className = "badge bg-warning text-dark bi bi-calendar-heart-fill";
+				} else if(SDH == 0) {
+					document.getElementById('duration').className = "badge bg-danger text-dark bi-calendar-heart-fill";
+					document.getElementById('info').className = "alert alert-danger bi bi-exclamation-triangle-fill";
+					document.getElementById('info').innerText = " Change sensor!";
+				}
+			}
+			// BATERY
+			if(medicalDeviceBatteryLevelPercent > 50) {
+				document.getElementById('battery').className = "badge bg-success text-dark bi bi-battery-full";
+			} else if(medicalDeviceBatteryLevelPercent > 25) {
+				document.getElementById('battery').className = "badge bg-warning text-dark bi bi-battery-half";
+			} else if(medicalDeviceBatteryLevelPercent <= 25) {
+				document.getElementById('battery').className = "badge bg-danger text-dark bi bi-battery";
+			} else {
+				document.getElementById('battery').className = "badge bg-danger text-dark bi bi-battery-full";
+			}
+			// CALIBRATION
+			if(timeToNextCalibHours >= 6) {
+				document.getElementById('claibration').className = "badge bg-success text-dark bi bi-droplet-fill";
+			} else if(timeToNextCalibHours >= 3) {
+				document.getElementById('claibration').className = "badge bg-warning text-dark bi bi-droplet-fill";
+			} else if(timeToNextCalibHours <= 0) {
+				document.getElementById('claibration').className = "badge bg-danger text-dark bi bi-droplet-fill";
+			} else {
+				document.getElementById('claibration').className = "badge bg-danger text-dark bi bi-droplet-fill";
+			}
+			// TREND
+			// UP
+			if(lastSGTrend == "UP") {
+				document.getElementById('trend').className = "bi bi-arrow-up-short";
+				document.getElementById('trend2').className = "";
+				document.getElementById('trend3').className = "";
+			} else if(lastSGTrend == "UP_DOUBLE") {
+				document.getElementById('trend').className = "bi bi-arrow-up-short";
+				document.getElementById('trend2').className = "bi bi-arrow-up-short";
+				document.getElementById('trend3').className = "";
+			} else if(lastSGTrend == "UP_TRIPLE") {
+				document.getElementById('trend').className = "bi bi-arrow-up-short";
+				document.getElementById('trend2').className = "bi bi-arrow-up-short";
+				document.getElementById('trend3').className = "bi bi-arrow-up-short";
+			}
+			// DOWN
+			else if(lastSGTrend == "DOWN") {
+				document.getElementById('trend').className = "bi bi-arrow-down-short";
+				document.getElementById('trend2').className = "";
+				document.getElementById('trend3').className = "";
+			} else if(lastSGTrend == "DOWN_DOUBLE") {
+				document.getElementById('trend').className = "bi bi-arrow-down-short";
+				document.getElementById('trend2').className = "bi bi-arrow-down-short";
+				document.getElementById('trend3').className = "";
+			} else if(lastSGTrend == "DOWN_TRIPLE") {
+				document.getElementById('trend').className = "bi bi-arrow-down-short";
+				document.getElementById('trend2').className = "bi bi-arrow-down-short";
+				document.getElementById('trend3').className = "bi bi-arrow-down-short";
+			}
+			// NONE
+			else if(lastSGTrend == "NONE") {
+				document.getElementById('trend').className = "bi bi-arrow-right-short";
+				document.getElementById('trend2').className = "";
+				document.getElementById('trend3').className = "";
+			}
+			// ERROR
+			else {
+				document.getElementById('trend').className = "bi bi-x";
+				document.getElementById('trend2').className = "";
+				document.getElementById('trend3').className = "";
+			}
+			// INFO
+			if (sensorDurationHours <= 0) {
+				document.getElementById('info').className = "alert alert-danger bi bi-exclamation-triangle-fill";
+				document.getElementById('info').innerText = " Change sensor!";
+			}
+			else if(medicalDeviceBatteryLevelPercent <= 25 && medicalDeviceBatteryLevelPercent >= 0) {
+				document.getElementById('info').className = "alert alert-danger bi bi-exclamation-triangle-fill";
+				document.getElementById('info').innerText = " Charge battery!";
+			}
+			else if(timeToNextCalibHours <= 0) {
+				document.getElementById('info').className = "alert alert-danger bi bi-exclamation-triangle-fill";
+				document.getElementById('info').innerText = " Calibration needed!";
+			}
+			else if(lastSG == 0) {
+				document.getElementById('info').className = "alert alert-danger bi bi-exclamation-triangle-fill";
+                document.getElementById('info').innerText = " Sensor Disconnected!";
+			}
+			else {
+				document.getElementById('info').className = "alert alert-info bi bi-info-circle-fill";
+				document.getElementById('info').innerText = " Sensor Ok!";
+			}
+			if (lastSG != 0) {
+				if (lastSG <= 80) {
+					document.getElementById('lastSG').style.cssText = "font-size:150px; font-family: Arial; color:Crimson;";
+					document.getElementById('info').className = "alert alert-danger bi bi-exclamation-triangle-fill";
+                    document.getElementById('info').innerText = " Low Value!";
+				}
+				else if (lastSG >= 250) {
+					document.getElementById('lastSG').style.cssText = "font-size:150px; font-family: Arial; color:Crimson;";
+                    document.getElementById('info').className = "alert alert-danger bi bi-exclamation-triangle-fill";
+                    document.getElementById('info').innerText = " High Value!";
+				}
+				else {
+				document.getElementById('lastSG').style.cssText = "font-size:150px; font-family: Arial;";
+			}
+			}
+			else {
+                    document.getElementById('lastSG').style.cssText = "font-size:150px; font-family: Arial; color:Crimson; text-decoration: line-through;";
+                    document.getElementById('info').className = "alert alert-danger bi bi-exclamation-triangle-fill";
+                    document.getElementById('info').innerText = " Sensor disconnected!";
+			}
+			
+			if (lastSG == 0) {
+				document.getElementById('lastSG').innerText = LSG;
+				document.getElementById('lastSG').style.cssText = "font-size:150px; font-family: Arial; color:Crimson; text-decoration: line-through;";
+			}
+			else {
+				document.getElementById('lastSG').innerText = lastSG;
+			}
+			// TIME
+			const d = new Date();
+			let hour = d.getHours() + 2;
+			let minute = d.getMinutes();
+			// GRAPH TIME
+			const currentTime = new Date(); 
+			const startTime = new Date(currentTime.getTime() - 3 * 60 * 60 * 1000); 
+			const timeValues = []; 
+
+			
+			for (let time = currentTime; time >= startTime; time.setMinutes(time.getMinutes() - 5)) {
+			timeValues.unshift(time.getHours() + ':' + time.getMinutes()); 
+			}
+			// INFO TEXT
+			document.getElementById('time').innerText = hour + " : " + minute;
+			document.getElementById('Name').innerText = "Hey " + firstName + "!";
+			document.getElementById('battery').innerText = " " + medicalDeviceBatteryLevelPercent + "%";
+			document.getElementById('claibration').innerText = " " + timeToNextCalibHours + " hours";
+			document.getElementById('status').innerText = "Status: " + sensorState;
+			// GRAPH SETTINGS
+			new Chart("myChart", {
+				type: "line",
+				data: {
+					labels: timeValues,
+					datasets: [{
+						data: Values,
+						backgroundColor: "rgba(225,225,255,1.0)",
+						borderColor: "rgba(225,225,255,0.4)",
+						fill: false
+					}, ]
+				},
+				options: {
+					legend: {
+						display: false
+					},
+					animation: false,
+					scales: {
+						display: false,
+						yAxes: [{
+							ticks: {
+								min: 0,
+								max: 400
+							}
+						}],
+					}
+				}
+			});
+		}
+		showTime();
+		// REFRESH
+		async function readJSONFile() {
+  const response = await fetch('data.json');
+  const fileData = await response.json();
+  console.log(fileData); // Output the contents of the JSON file
+  // Set the data
+  firstName = fileData.name;
+  lastSG = fileData.sg;
+  lastSGTrend = fileData.trend;
+  medicalDeviceBatteryLevelPercent = fileData.battery;
+  timeToNextCalibHours = fileData.calibration;
+  sensorDurationHours = fileData.sensorlife;
+  sensorState = fileData.state;
+  Values = fileData.values;
+  LSG = fileData.last;
+
+}
+
+
+readJSONFile();
+		setInterval(readJSONFile, 1000);
+		setInterval(showTime, 1000);
+    
+		</script>
+</body>
+
+</html>
