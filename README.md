@@ -12,30 +12,24 @@ A simple web app that helps users keep track of their glucose levels and medical
 - Show the user's last recorded glucose level and its trend
 - Provide a notification when the device needs calibration or if there are any issues with the sensor
 - Allow the user to enter their name and receive a personalized greeting
+- Easy setup with CLI wizard
 
 
 
 ## :computer: Tech Stack
 
-This website is built using HTML, CSS, and JavaScript. It uses [Bootstrap](https://getbootstrap.com/) for the layout and [Bootstrap Icons](https://icons.getbootstrap.com/) for the icons. The app retrieves data from the user's medical device using [carelink-python-client](https://github.com/ondrej1024/carelink-python-client) by ondrej1024.
+This website is built using HTML, CSS, JavaScript and Python. It uses [Bootstrap](https://getbootstrap.com/) for the layout and [Bootstrap Icons](https://icons.getbootstrap.com/) for the icons. The app retrieves data from the user's medical device using [carelink-python-client](https://github.com/ondrej1024/carelink-python-client) by ondrej1024.
 
 
 ## :information_source: How to Use
 
-- Clone this repository and install the dependencies:
+- Clone this repository:
 ```
 git clone https://github.com/Yirade/Carelink-Web
 ```
-- Replace the placeholder values in "data.py" with your own device information:
+- Run the wizard script:
 ```
-# Enter your login credentials
-USERNAME = "Enter your username here"
-PASSWORD = "Enter your password here"
-COUNTRY = "Enter your country here"
-```
-- Run the script:
-```
-python3 data.py
+./run.sh
 ```
 
 
