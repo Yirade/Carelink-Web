@@ -1,14 +1,23 @@
 import carelink_client
+
 import json
 
-# Enter your login credentials
-USERNAME = "Enter your username here"
-PASSWORD = "Enter your password here"
-COUNTRY = "Enter your country here"
+# Read the configuration file
+with open("config.txt") as f:
+    for line in f:
+        line = line.strip()
+        if line.startswith("user_name="):
+            user_name = line.split("=")[1]
+        elif line.startswith("user_password="):
+            user_password = line.split("=")[1]
+        elif line.startswith("user_country="):
+            user_country = line.split("=")[1]
+        elif line.startswith("port_number="):
+            port_number = line.split("=")[1]
 
 while True:
     # Create a CareLink client object
-    client = carelink_client.CareLinkClient(USERNAME, PASSWORD, COUNTRY)
+    client = carelink_client.CareLinkClient(user_name, user_password, user_country)
     
     # Attempt to login to CareLink
     if client.login():
@@ -58,7 +67,7 @@ while True:
 
             # Convert the dictionary to a JSON object and print it
             json_object = json.dumps(data_dict, indent=9)
-            print(json_object)
+            #print(json_object)
             
             # Write the JSON object to a file
             with open("data.json", "w") as outfile:
