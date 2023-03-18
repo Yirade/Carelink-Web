@@ -13,7 +13,7 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
             return None
 
         # only allow access to files with certain extensions
-        allowed_extensions = ['.html', '.js', '.css', '.json']
+        allowed_extensions = ['.html', '.js', '.css', '.json', ',ico']
         if not any(path.endswith(ext) for ext in allowed_extensions):
             self.send_error(404, "File not found")
             return None
