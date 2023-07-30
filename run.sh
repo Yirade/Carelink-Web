@@ -1,17 +1,44 @@
 #!/bin/bash
 
-# Check if config.txt exists, if not prompt user to create one
+# Function to check if the server is running
+function is_server_running() {
+    ps -p $SERVER_PID > /dev/null
+}
+
+# Function to start the server
+function start_server() {
+    echo "Starting the server..."
+    python3 server.py &
+    SERVER_PID=$!
+}
+
+# Function to stop the server gracefully
+function stop_server() {
+    kill $SERVER_PID
+    wait $SERVER_PID 2>/dev/null
+}
+
+# Check if the port is in use by another process
+function is_port_in_use() {
+    netstat -tuln | grep ":$port_number\b" > /dev/null
+}
+
+# Check if config.txt exists, if not prompt the user to create one
 if [[ ! -f config.txt ]]; then
     read -p "Configuration file not found. Do you want to create one now? (y/n) " create_file
 
     if [[ $create_file == "y" ]]; then
         read -p "Enter user name: " user_name
         read -p "Enter user password: " user_password
-        read -p "Enter user country: " user_country
+        read -p "Enter patient ID (patient name): " patient_id
+        read -p "Enter user country (eg. US, UK): " user_country
         read -p "Enter port number (default is 8000): " port_number
 
         # Write configuration data to config.txt
-        echo "# User name" > config.txt
+        echo "# Patient ID" > config.txt
+        echo "patient_id=$patient_id" >> config.txt
+        echo "" >> config.txt
+        echo "# User name" >> config.txt
         echo "user_name=$user_name" >> config.txt
         echo "" >> config.txt
         echo "# User password" >> config.txt
@@ -30,7 +57,7 @@ if [[ ! -f config.txt ]]; then
         fi
 
     else
-        echo "Cannot start server without configuration file. Exiting."
+        echo "Cannot start server without a configuration file. Exiting."
         exit 1
     fi
 fi
@@ -72,15 +99,21 @@ if [[ ! -x "$(command -v datetime)" ]]; then
     pip install datetime
 fi
 
-# Kill processes running on port $port_number
-echo "Killing processes running on port $port_number..."
-kill $(lsof -t -i:$port_number)
-sleep 2
+# Check if the port is already in use
+if is_port_in_use; then
+    echo "Port $port_number is already in use. Cannot start the server. Exiting."
+    exit 1
+fi
+
+# Kill processes running on port $port_number if needed
+if is_server_running; then
+    echo "Killing existing processes running on port $port_number..."
+    stop_server
+    sleep 2
+fi
 
 # Start the server
-echo "Starting the server..."
-python3 server.py &
-SERVER_PID=$!
+start_server
 
 # Start the data management file
 echo "Starting the data management file..."
@@ -116,8 +149,9 @@ do
         echo -e "index.html: \033[31mNot working\033[0m\n"
     fi
 
-    # Check if 'q' key has been pressed to exit the server
-    
+    echo "Press 'q' to exit."
+
+    # Check if the 'q' key has been pressed to exit the server
     read -t 1 -n 1 input
     if [[ $input = "q" ]]
     then
@@ -126,11 +160,10 @@ do
     fi
 
     sleep 1
-    
 done
 
 # Terminate the server and data management file processes
 echo -e "\nTerminating the server and data management file processes..."
-kill $SERVER_PID $DATA_PID $(lsof -t -i:$port_number)
+stop_server
 
 echo "Exiting the server."

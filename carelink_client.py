@@ -16,19 +16,23 @@
 #
 #    09/05/2021 - Initial public release
 #    06/06/2021 - Add check for expired token
+#    19/09/2022 - Check for general BLE device family to support 770G
+#    09/05/2023 - Fix connection issues by removing common http headers
+#    24/05/2023 - Add handling of patient Id in data request
+#    29/06/2023 - Get login parameters from response to connection request
 #
-#  Copyright 2021, Ondrej Wisniewski 
+#  Copyright 2021-2023, Ondrej Wisniewski 
 #
 ###############################################################################
 
 import json
-import time
 import requests
 from datetime import datetime, timedelta
 from urllib.parse import urlparse, parse_qsl
+import time
 
 # Version string
-VERSION = "0.2"
+VERSION = "0.6"
 
 # Constants
 CARELINK_CONNECT_SERVER_EU = "carelink.minimed.eu"
@@ -48,12 +52,13 @@ def printdbg(msg):
 
 class CareLinkClient(object):
    
-   def __init__(self, carelinkUsername, carelinkPassword, carelinkCountry):
+   def __init__(self, carelinkUsername, carelinkPassword, carelinkCountry, carelinkPatient):
       
       # User info
       self.__carelinkUsername = carelinkUsername
       self.__carelinkPassword = carelinkPassword
       self.__carelinkCountry = carelinkCountry.lower()
+      self.__carelinkPatient = carelinkPatient
 
       # Session info
       self.__sessionUser = None
@@ -68,6 +73,8 @@ class CareLinkClient(object):
       self.__lastResponseCode = None
       self.__lastErrorMessage = None
 
+      self.__commonHeaders = {}
+      '''
       self.__commonHeaders = {
             # Common browser headers
             "Accept-Language":"en;q=0.9, *;q=0.8",
@@ -76,7 +83,7 @@ class CareLinkClient(object):
             "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36",
             "Accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
           }
-      
+      '''
       # Create main http client session with CookieJar
       self.__httpClient = requests.Session()
     
@@ -122,13 +129,14 @@ class CareLinkClient(object):
 
    def __doLogin(self, loginSessionResponse):
       queryParameters = dict(parse_qsl(urlparse(loginSessionResponse.url).query))
-      url = "https://mdtlogin.medtronic.com" + "/mmcl/auth/oauth/v2/authorize/login"
-      payload = { "country":self.__carelinkCountry, 
-                  "locale":CARELINK_LOCALE_EN
+      p = urlparse(loginSessionResponse.url)
+      url = p.scheme + "://" + p.netloc + p.path
+      payload = { "country":queryParameters["countrycode"], 
+                  "locale":queryParameters["locale"]
                 }
       form =    { "sessionID":queryParameters["sessionID"],
                   "sessionData":queryParameters["sessionData"],
-                  "locale":CARELINK_LOCALE_EN,
+                  "locale":queryParameters["locale"],
                   "action":"login",
                   "username":self.__carelinkUsername,
                   "password":self.__carelinkPassword,
@@ -256,12 +264,13 @@ class CareLinkClient(object):
 
 
    # Periodic data from CareLink Cloud
-   def __getConnectDisplayMessage(self, username, role, endpointUrl):
+   def __getConnectDisplayMessage(self, username, role, patient, endpointUrl):
       printdbg("__getConnectDisplayMessage()")
    
       # Build user json for request
       userJson = { "username":username,
-                   "role":role
+                   "role":role,
+                   "patientId":patient
                  }
       requestBody = json.dumps(userJson)
       recentData = self.__getData(None, endpointUrl, None, requestBody)
@@ -359,9 +368,10 @@ class CareLinkClient(object):
    def getRecentData(self):
       # Force login to get basic info
       if self.__getAuthorizationToken() != None:
-         if self.__carelinkCountry == "us" or self.__sessionMonitorData["deviceFamily"] == "BLE_X":
+         if self.__carelinkCountry == "us" or "BLE" in self.__sessionMonitorData["deviceFamily"]:
             role = "carepartner" if self.__sessionUser["role"] in ["CARE_PARTNER","CARE_PARTNER_OUS"] else "patient"
-            return self.__getConnectDisplayMessage(self.__sessionProfile["username"], role, self.__sessionCountrySettings["blePereodicDataEndpoint"])
+            patient = self.__carelinkPatient
+            return self.__getConnectDisplayMessage(self.__sessionProfile["username"], role, patient, self.__sessionCountrySettings["blePereodicDataEndpoint"])
          else:
             return self.__getLast24Hours()
       else:

@@ -1,6 +1,9 @@
 import carelink_client
 
 import json
+import requests
+import time
+
 
 # Read the configuration file
 with open("config.txt") as f:
@@ -14,10 +17,12 @@ with open("config.txt") as f:
             user_country = line.split("=")[1]
         elif line.startswith("port_number="):
             port_number = line.split("=")[1]
+        elif line.startswith("patient_id"):
+            patient_id = line.split("=")[1]
 
 while True:
     # Create a CareLink client object
-    client = carelink_client.CareLinkClient(user_name, user_password, user_country)
+    client = carelink_client.CareLinkClient(user_name, user_password, user_country, patient_id)
     
     # Attempt to login to CareLink
     if client.login():

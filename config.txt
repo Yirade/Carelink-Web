@@ -1,0 +1,14 @@
+# Patient ID
+patient_id=Sara Ecoboaea
+
+# User name
+user_name=Dennyeco
+
+# User password
+user_password=Yirade2002
+
+# Country
+user_country=RO
+
+# Port number
+port_number=8000
